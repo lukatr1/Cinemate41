@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -29,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +50,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.example.movieappmad24.models.MoviesViewModel
 import com.example.movieappmad24.models.Movie
 import com.example.movieappmad24.models.getMovies
 import com.example.movieappmad24.navigation.Screen
@@ -57,13 +60,22 @@ import com.example.movieappmad24.navigation.Screen
 fun MovieList(
     modifier: Modifier,
     movies: List<Movie> = getMovies(),
-    navController: NavController
-){
+    navController: NavController,
+    viewModel: MoviesViewModel // MARK 1
+) {
+
     LazyColumn(modifier = modifier) {
         items(movies) { movie ->
-            MovieRow(movie = movie) {movieId ->
-                navController.navigate(route = Screen.DetailScreen.withId(movieId))
-            }
+            MovieRow(
+                movie = movie,
+                onItemClick = { movieId ->
+                    navController.navigate(route = Screen.DetailScreen.withId(movieId))
+                    //viewModel.toggleFavorite(movieId)
+                },
+                onFavoriteClick = { movieId ->
+                    viewModel.toggleFavorite(movieId)
+                }
+            )
         }
     }
 }
@@ -72,7 +84,10 @@ fun MovieList(
 fun MovieRow(
     modifier: Modifier = Modifier,
     movie: Movie,
-    onItemClick: (String) -> Unit = {}
+    onItemClick: (String) -> Unit = {},
+    //isFavorite: Boolean = false,
+    onFavoriteClick: (String) -> Unit
+
 ){
     Card(modifier = modifier
         .fillMaxWidth()
@@ -85,7 +100,9 @@ fun MovieRow(
     ) {
         Column {
 
-            MovieCardHeader(imageUrl = movie.images[0])
+            MovieCardHeader(imageUrl = movie.images[0], isFavorite = movie.isFavorite,
+                onFavoriteClick = { onFavoriteClick(movie.id) }
+            )
 
             MovieDetails(modifier = modifier.padding(12.dp), movie = movie)
 
@@ -94,7 +111,7 @@ fun MovieRow(
 }
 
 @Composable
-fun MovieCardHeader(imageUrl: String) {
+fun MovieCardHeader(imageUrl: String, isFavorite: Boolean = false, onFavoriteClick: () -> Unit = {}){
     Box(
         modifier = Modifier
             .height(150.dp)
@@ -104,7 +121,7 @@ fun MovieCardHeader(imageUrl: String) {
 
         MovieImage(imageUrl)
 
-        FavoriteIcon()
+        FavoriteIcon(isFavorite = isFavorite, onFavoriteClick)
     }
 }
 
@@ -124,7 +141,7 @@ fun MovieImage(imageUrl: String){
 }
 
 @Composable
-fun FavoriteIcon() {
+fun FavoriteIcon(isFavorite: Boolean, onFavoriteClick: () -> Unit = {}){
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -132,8 +149,14 @@ fun FavoriteIcon() {
         contentAlignment = Alignment.TopEnd
     ){
         Icon(
-            tint = MaterialTheme.colorScheme.secondary,
-            imageVector = Icons.Default.FavoriteBorder,
+            modifier = Modifier.clickable {onFavoriteClick()},
+            tint = Color.Green,
+            imageVector =
+            if (isFavorite) {
+                Icons.Filled.Favorite
+            } else {
+                Icons.Default.FavoriteBorder
+            },
             contentDescription = "Add to favorites")
     }
 }
@@ -213,3 +236,4 @@ fun HorizontalScrollableImageView(movie: Movie) {
         }
     }
 }
+
